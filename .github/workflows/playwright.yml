@@ -4,7 +4,13 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+# L'équivalent du "Schedule" GitLab
+  schedule:
+    # Déclenchement à 00:00 UTC chaque jour
+    - cron: '0 0 * * *'
 
+  # Permet de lancer manuellement (comme le bouton "Run Pipeline" de GitLab)
+  workflow_dispatch:
 permissions:
   contents: read
   pages: write
