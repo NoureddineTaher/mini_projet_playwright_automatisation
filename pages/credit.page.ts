@@ -18,77 +18,59 @@ export class CreditPage {
   private readonly cookieBtn: Locator;
   private readonly openAccountLink: Locator;
   private readonly openAccountBtn: Locator;
-
   private readonly postalInput: Locator;
-  private readonly continueBtn: Locator;
-
-  private readonly offerBtn: Locator;
+  public readonly continueBtn: Locator; 
   private readonly notClientBtn: Locator;
   private readonly eligibleBtn: Locator;
-
   private readonly civilityMr: Locator;
-
   private readonly firstNameInput: Locator;
   private readonly lastNameInput: Locator;
   private readonly birthDateInput: Locator;
-
   private readonly phoneInput: Locator;
   private readonly emailInput: Locator;
+  
+  public readonly errorMessage: Locator; 
+  public readonly neoErrorMessage: Locator;
+  public readonly ageErrorMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
-    // ===== Init locators =====
     this.cookieBtn = page.getByRole('button', { name: 'Continuer sans accepter' });
-
     this.openAccountLink = page.getByRole('link', { name: 'Ouvrir un compte', exact: true });
     this.openAccountBtn = page.getByRole('button', { name: 'Ouvrir un compte bancaire en' });
-
     this.postalInput = page.getByRole('textbox', { name: 'code postal' });
     this.continueBtn = page.getByRole('button', { name: 'Continuer' });
 
-    this.offerBtn = page
-      .locator('app-card')
-      .filter({ hasText: 'Contrôle de solde' })
-      .getByRole('button');
-
     this.notClientBtn = page.getByRole('button', { name: 'Non, je ne suis pas encore' });
     this.eligibleBtn = page.getByRole('button', { name: 'Oui je suis éligible' });
-
     this.civilityMr = page.getByText('Monsieur');
-
     this.firstNameInput = page.getByRole('textbox', { name: 'Prénom' });
     this.lastNameInput = page.getByRole('textbox', { name: 'Nom de naissance' });
     this.birthDateInput = page.getByRole('textbox', { name: 'Date de naissance (JJ/MM/AAAA)' });
-
     this.phoneInput = page.getByRole('textbox', { name: 'Numéro de mobile' });
     this.emailInput = page.getByRole('textbox', { name: 'Adresse email' });
+    
+    this.errorMessage = page.locator('.bpce-input-error-msg');
+    this.neoErrorMessage = page.locator('.neo-text-helper-error .neo-text-helper-text');
+    this.ageErrorMessage = page.locator('.neo-text-helper-error .neo-text-helper-text'); 
   }
 
-  // =========================
-  // Navigation
-  // =========================
   async navigate() {
-    await this.page.goto(
-      'https://www.caisse-epargne.fr/comptes-cartes/le-credit-renouvelable-izicarte/'
-    );
+    const url = process.env.BASE_URL_UI;
+    if (!url) throw new Error("ERREUR: BASE_URL_UI n'est pas définie");
+    await this.page.goto(url);
   }
 
-  // =========================
-  // Helpers anti-flaky
-  // =========================
   private async clickContinue() {
+    await this.continueBtn.scrollIntoViewIfNeeded();
     await expect(this.continueBtn).toBeVisible();
     await expect(this.continueBtn).toBeEnabled();
     await this.continueBtn.click();
   }
 
-  // =========================
-  // Actions
-  // =========================
-
   async acceptCookies() {
-    await this.cookieBtn.click({ timeout: 3000 }).catch(() => {});
+    await this.cookieBtn.click({ timeout: 5000 }).catch(() => {});
   }
 
   async openAccount() {
@@ -96,18 +78,35 @@ export class CreditPage {
     await this.openAccountBtn.first().click();
   }
 
-  async fillPostalCode(code: string) {
+  async fillPostalCode(code: string, shouldClickContinue = true) {
     await this.postalInput.fill(code);
-
-    // plus stable que press('Tab')
     await this.postalInput.blur();
-
-    await this.clickContinue();
+    if (shouldClickContinue) {
+      await this.clickContinue();
+      await this.page.waitForLoadState('networkidle').catch(() => {});
+    }
   }
 
+  /**
+   * MODIFICATION : Application de la SOLUTION 1
+   * Plus robuste face aux variations de texte de la carte d'offre
+   */
   async chooseOffer() {
-    await expect(this.offerBtn).toBeVisible();
-    await this.offerBtn.click();
+    // 1. Attendre que les cartes soient attachées au DOM
+    await this.page.waitForSelector('app-card', { state: 'attached', timeout: 15000 });
+
+    // 2. Filtrer la carte par un mot-clé unique ("solde")
+    // et cibler le premier bouton trouvé à l'intérieur
+    const specificOffer = this.page
+      .locator('app-card')
+      .filter({ hasText: /solde/i })
+      .locator('button, [role="button"]')
+      .first();
+
+    // 3. Scroll et vérification avant le clic
+    await specificOffer.scrollIntoViewIfNeeded();
+    await expect(specificOffer).toBeVisible({ timeout: 15000 });
+    await specificOffer.click();
   }
 
   async eligibilityStep() {
@@ -116,25 +115,25 @@ export class CreditPage {
     await this.eligibleBtn.click();
   }
 
-  async fillIdentity(data: IdentityData) {
+  async fillIdentity(data: IdentityData, shouldClickContinue = true) {
     await this.firstNameInput.fill(data.firstName);
-
     await this.civilityMr.click();
-
     await this.lastNameInput.fill(data.lastName);
     await this.birthDateInput.fill(data.birthDate);
-
     await this.birthDateInput.blur();
-
-    await this.clickContinue();
+    
+    if (shouldClickContinue) {
+      await this.clickContinue();
+    }
   }
 
-  async fillContact(data: ContactData) {
+  async fillContact(data: ContactData, shouldClickContinue = true) {
     await this.phoneInput.fill(data.phone);
     await this.emailInput.fill(data.email);
-
     await this.emailInput.blur();
-
-    await this.clickContinue();
+    
+    if (shouldClickContinue) {
+      await this.clickContinue();
+    }
   }
 }

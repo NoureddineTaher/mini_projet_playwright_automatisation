@@ -1,82 +1,59 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
 
 /**
- * Read environment variables from file.
+ * Lit les variables d'environnement depuis le fichier .env
  * https://github.com/motdotla/dotenv
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
- * See https://playwright.dev/docs/test-configuration.
+ * Voir https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
   testDir: './tests',
-  /* Run tests in files in parallel */
+  /* Exécution des tests en parallèle */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  /* Échoue sur le CI si test.only est resté dans le code */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
+  /* Nombre de tentatives sur le CI */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
+  /* Nombre de workers */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  /* Format du rapport */
   reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+timeout: 60000, // Passe le timeout par défaut à 60 secondes
+  expect: {
+    timeout: 10000, // Les assertions ont 10s pour réussir
+  },
+  /* Paramètres partagés pour tous les projets */
   use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
+    /* Base URL pour les actions comme `await page.goto('/')` */
+    /* On utilise la variable définie dans le .env */
+    baseURL: process.env.BASE_URL_UI, 
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-      trace: 'retain-on-failure',
+    /* Capture des traces, screenshots et vidéos en cas d'échec */
+    trace: 'retain-on-failure',
     browserName: "chromium",
     headless: true,
-    screenshot: "only-on-failure", // Take screenshot only when test fails
-     // Optional: keeps trace for debugging
-    video: 'retain-on-failure' ,    // (Optional) Record video if test fails
+    screenshot: "only-on-failure",
+    video: 'retain-on-failure',
+    
     launchOptions: {
-      slowMo:300,
+      slowMo: 300,
     }
   },
 
-  /* Configure projects for major browsers */
+  /* Configuration des projets par navigateur */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'],
-          actionTimeout: 10000,
-          navigationTimeout: 15000
+      use: { 
+        ...devices['Desktop Chrome'],
+        actionTimeout: 10000,
+        navigationTimeout: 15000
        },
     },
-
-   
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
-
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
 });

@@ -1,8 +1,14 @@
-export const userData = {
-  firstName: 'NOUREDDINE',
-  lastName: 'TAHER',
-  birthDate: '04/09/1993',
-  phone: '0745313152',
-  email: 'noureddine.taher1993@gmail.com',
-  postalCode: '78500'
+export const testData = {
+  validUser: {
+    postalCode: '75001',
+    firstName: 'Noureddine',
+    lastName: 'Taher',
+    birthDate: '15/05/1990',
+    phone: '0612345678',
+    email: 'test.ok@exemple.com'
+  },
+  invalidData: {
+    postalCode: '00000',
+    badEmail: 'noureddine.taher@pasdomaine'
+  }
 };
