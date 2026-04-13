@@ -36,7 +36,7 @@ export class CreditPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.cookieBtn = page.getByRole('button', { name: 'Continuer sans accepter' });
+   // this.cookieBtn = page.getByRole('button', { name: 'Continuer sans accepter' });
     this.openAccountLink = page.getByRole('link', { name: 'Ouvrir un compte', exact: true });
     this.openAccountBtn = page.getByRole('button', { name: 'Ouvrir un compte bancaire en' });
     this.postalInput = page.getByRole('textbox', { name: 'code postal' });
@@ -93,8 +93,9 @@ export class CreditPage {
    */
   async chooseOffer() {
     // 1. Attendre que les cartes soient attachées au DOM
-    await this.page.waitForSelector('app-card', { state: 'attached', timeout: 15000 });
-
+   // await this.page.waitForSelector('app-card', { state: 'attached', timeout: 15000 });
+   // await this.page.waitForSelector('app-card', { state: 'attached', timeout: 30000 });
+    await this.page.locator('app-card').first().waitFor({ state: 'visible', timeout: 30000 });
     // 2. Filtrer la carte par un mot-clé unique ("solde")
     // et cibler le premier bouton trouvé à l'intérieur
     const specificOffer = this.page
