@@ -76,22 +76,26 @@ jobs:
     if: failure() # S'exécute uniquement si un job précédent a échoué
     runs-on: ubuntu-latest
     steps:
-      - name: Send Email on Failure
+      - name: Send custom mail
+        if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.mail.yahoo.com
           server_port: 465
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "❌ Échec du Pipeline Playwright : ${{ github.repository }}"
+          subject: "🚨 Failure Alert: ${{ github.repository }}"
           to: noureddine_taher@yahoo.com
           from: GitHub Actions
           body: |
-            Bonjour Noureddine,
-
-            Le pipeline Playwright a rencontré une erreur.
-
-            🔗 Rapport HTML : https://noureddinetaher.github.io/mini_projet_playwright_automatisation/
-            🛠 Détails du run : https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-            Veuillez vérifier les tests en échec.
+            Hello,
+            The pipeline execution has failed.
+            
+            Details:
+            - Pipeline ID: ${{ github.run_id }}
+            - Job Name: ${{ github.job }}
+            - Test Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+            
+            Please review the failure details and take the necessary actions.
+            
+            Best regards,
