@@ -4,20 +4,17 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-# L'équivalent du "Schedule" GitLab
   schedule:
-    # Déclenchement à 00:00 UTC chaque jour
     - cron: '0 0 * * *'
-
-  # Permet de lancer manuellement (comme le bouton "Run Pipeline" de GitLab)
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
 
 jobs:
-  # JOB 1 : Tests API (Rapides)
+  # JOB 1 : Tests API
   test_api:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -30,7 +27,6 @@ jobs:
       run: npm ci
     - name: Run API tests
       run: npx playwright test tests/api-credit.spec.ts
-    # On sauvegarde les résultats API temporairement
     - name: Upload API results
       if: always()
       uses: actions/upload-artifact@v4
@@ -39,7 +35,7 @@ jobs:
         path: playwright-report/
         retention-days: 1
 
-  # JOB 2 : Tests UI (Plus longs) - S'exécute APRES l'API
+  # JOB 2 : Tests UI
   test_ui:
     needs: test_api
     timeout-minutes: 60
@@ -53,20 +49,15 @@ jobs:
       run: npm ci
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
-    
-    # IMPORTANT : On lance TOUS les tests ici pour générer le rapport complet
-    # Cela garantit que le rapport final contient les 6 tests (cite: image_74c209.png)
     - name: Run All tests (API + UI)
       run: npx playwright test
-
-    # On prépare l'artefact pour GitHub Pages
     - name: Upload artifact
       if: always()
       uses: actions/upload-pages-artifact@v3
       with:
         path: playwright-report/
 
-  # JOB 3 : Déploiement (Attend que UI soit fini)
+  # JOB 3 : Déploiement
   deploy:
     needs: test_ui
     if: always()
@@ -78,3 +69,29 @@ jobs:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
+
+  # ---  JOB DE NOTIFICATION ---
+  notify_failure:
+    needs: [test_api, test_ui, deploy]
+    if: failure() # S'exécute uniquement si un job précédent a échoué
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Email on Failure
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.mail.yahoo.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ Échec du Pipeline Playwright : ${{ github.repository }}"
+          to: noureddine_taher@yahoo.com
+          from: GitHub Actions
+          body: |
+            Bonjour Noureddine,
+
+            Le pipeline Playwright a rencontré une erreur.
+
+            🔗 Rapport HTML : https://noureddinetaher.github.io/mini_projet_playwright_automatisation/
+            🛠 Détails du run : https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Veuillez vérifier les tests en échec.
