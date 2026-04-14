@@ -36,7 +36,7 @@ export class CreditPage {
   constructor(page: Page) {
     this.page = page;
 
-   // this.cookieBtn = page.getByRole('button', { name: 'Continuer sans accepter' });
+    this.cookieBtn = page.getByRole('button', { name: 'Continuer sans accepter' });
     this.openAccountLink = page.getByRole('link', { name: 'Ouvrir un compte', exact: true });
     this.openAccountBtn = page.getByRole('button', { name: 'Ouvrir un compte bancaire en' });
     this.postalInput = page.getByRole('textbox', { name: 'code postal' });
