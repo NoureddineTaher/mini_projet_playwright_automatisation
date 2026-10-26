@@ -33,27 +33,43 @@ test.describe('Validation du formulaire de Crédit Izicarte', () => {
     // Vérification du blocage UI
     await expect(creditPage.continueBtn).toBeDisabled();
   });
+test("TC-03 : devrait bloquer la validation si l'email est mal formé", async () => {
+  // Timeout explicite pour tout le parcours (5 étapes + chargement des offres)
+  test.setTimeout(90_000);
 
- test('TC-03 : devrait bloquer la validation si l\'email est mal formé', async ({ page }) => {
-  // Option A : Indique à Playwright que ce test est normalement lent (triple le timeout)
-  test.slow(); 
-  
-  // OU Option B : Fixe un timeout précis de 60 secondes pour ce test
-  // test.setTimeout(60000);
+  await test.step('Saisir le code postal', async () => {
+    await creditPage.fillPostalCode(testData.validUser.postalCode);
+  });
 
-  await creditPage.fillPostalCode(testData.validUser.postalCode);
-  await creditPage.chooseOffer();
-  await creditPage.eligibilityStep();
-  await creditPage.fillIdentity(testData.validUser); 
+  await test.step("Choisir une offre", async () => {
+    await creditPage.chooseOffer();
+  });
 
-  await creditPage.fillContact({
-    phone: testData.validUser.phone,
-    email: testData.invalidData.badEmail
-  }, false); 
-  
-  await expect(creditPage.neoErrorMessage).toBeVisible();
-  await expect(creditPage.neoErrorMessage).toHaveText(/Votre adresse email n.est pas valide/i);
-  await expect(creditPage.continueBtn).toBeDisabled();
+  await test.step("Passer l'étape d'éligibilité", async () => {
+    await creditPage.eligibilityStep();
+  });
+
+  await test.step("Renseigner l'identité", async () => {
+    await creditPage.fillIdentity(testData.validUser);
+  });
+
+  await test.step('Saisir un email mal formé', async () => {
+    await creditPage.fillContact(
+      {
+        phone: testData.validUser.phone,
+        email: testData.invalidData.badEmail,
+      },
+      false
+    );
+  });
+
+  await test.step("Vérifier l'erreur et le blocage UI", async () => {
+    await expect(creditPage.neoErrorMessage).toBeVisible();
+    await expect(creditPage.neoErrorMessage).toHaveText(
+      /Votre adresse email n.est pas valide/i
+    );
+    await expect(creditPage.continueBtn).toBeDisabled();
+  });
 });
 
   test('TC-04 : devrait afficher une erreur si l\'utilisateur est mineur', async ({ page }) => {
