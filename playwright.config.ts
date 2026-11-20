@@ -13,47 +13,29 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  */
 export default defineConfig({
   testDir: './tests',
-  /* Exécution des tests en parallèle */
-  fullyParallel: true,
-  /* Échoue sur le CI si test.only est resté dans le code */
+  fullyParallel: false,          // était true
   forbidOnly: !!process.env.CI,
-  /* Nombre de tentatives sur le CI */
   retries: process.env.CI ? 2 : 0,
-  /* Nombre de workers */
-  workers: process.env.CI ? 1 : undefined,
-  /* Format du rapport */
+  workers: 1,                    // était: process.env.CI ? 1 : undefined
   reporter: 'html',
-timeout: 60000, // Passe le timeout par défaut à 60 secondes
-  expect: {
-    timeout: 10000, // Les assertions ont 10s pour réussir
-  },
-  /* Paramètres partagés pour tous les projets */
+  timeout: 60000,
+  expect: { timeout: 10000 },
   use: {
-    /* Base URL pour les actions comme `await page.goto('/')` */
-    /* On utilise la variable définie dans le .env */
-    baseURL: process.env.BASE_URL_UI, 
-
-    /* Capture des traces, screenshots et vidéos en cas d'échec */
+    baseURL: process.env.BASE_URL_UI,
     trace: 'retain-on-failure',
-    browserName: "chromium",
     headless: true,
-    screenshot: "only-on-failure",
+    screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    
-    launchOptions: {
-      slowMo: 300,
-    }
+    // launchOptions: { slowMo: 300 },  // voir ci-dessous
   },
-
-  /* Configuration des projets par navigateur */
   projects: [
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         actionTimeout: 10000,
-        navigationTimeout: 15000
-       },
+        navigationTimeout: 15000,
+      },
     },
   ],
 });
