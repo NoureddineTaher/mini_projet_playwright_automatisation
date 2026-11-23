@@ -12,12 +12,10 @@ on:
 
   workflow_dispatch:
 
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 
 jobs:
 
@@ -27,6 +25,9 @@ jobs:
   test_api:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+
+    env:
+      BASE_URL_API: https://jsonplaceholder.typicode.com
 
     steps:
       - name: Checkout repository
@@ -55,6 +56,7 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
 
   # ============================================================
@@ -64,6 +66,10 @@ jobs:
     needs: test_api
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
+    env:
+      BASE_URL_API: https://jsonplaceholder.typicode.com
+      BASE_URL_UI: https://www.caisse-epargne.fr/comptes-cartes/le-credit-renouvelable-izicarte/
 
     steps:
       - name: Checkout repository
@@ -87,6 +93,7 @@ jobs:
         if: always()
         uses: actions/upload-pages-artifact@v3
         with:
+          name: github-pages
           path: playwright-report/
 
 
@@ -95,7 +102,6 @@ jobs:
   # ============================================================
   deploy:
     needs: test_ui
-    if: always()
 
     runs-on: ubuntu-24.04
 
@@ -143,13 +149,13 @@ jobs:
 
             Tous les tests automatisés sont passés avec succès.
 
-            📊 Rapport HTML Playwright :
+            Rapport HTML Playwright :
             https://noureddinetaher.github.io/mini_projet_playwright_automatisation/
 
-            🛠 Détails du workflow :
+            Détails du workflow :
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-            📌 Repository :
+            Repository :
             https://github.com/${{ github.repository }}
 
             Branche :
@@ -159,7 +165,7 @@ jobs:
             ${{ github.sha }}
 
             Date d'exécution :
-            ${{ github.event.head_commit.timestamp }}
+            ${{ github.event.head_commit.timestamp || github.run_started_at }}
 
             Cordialement,
 
@@ -201,13 +207,13 @@ jobs:
 
             Certains tests ou une étape du pipeline ont échoué.
 
-            📊 Rapport HTML Playwright :
+            Rapport HTML Playwright :
             https://noureddinetaher.github.io/mini_projet_playwright_automatisation/
 
-            🛠 Détails du workflow :
+            Détails du workflow :
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-            📌 Repository :
+            Repository :
             https://github.com/${{ github.repository }}
 
             Branche :
@@ -216,7 +222,7 @@ jobs:
             Commit :
             ${{ github.sha }}
 
-            Veuillez consulter le rapport Playwright pour identifier les tests en échec.
+            Veuillez consulter les logs GitHub Actions pour identifier les tests en échec.
 
             Cordialement,
 
