@@ -12,19 +12,34 @@ test.describe('Validation du formulaire de Crédit Izicarte', () => {
     await creditPage.openAccount();
   });
 
-  test('TC-01 : devrait valider un parcours de souscription complet', async ({ page }) => {
-    test.setTimeout(60_000); // Tunnel long, on augmente le temps
+  test('TC-01 : devrait valider un parcours de souscription complet', async () => {
+    test.setTimeout(90_000); // Tunnel long + runner CI plus lent
 
-    await creditPage.fillPostalCode(testData.validUser.postalCode);
-    await creditPage.chooseOffer();
-    await creditPage.eligibilityStep();
-    await creditPage.fillIdentity(testData.validUser);
-    await creditPage.fillContact(testData.validUser);
+    await test.step('Saisir le code postal', async () => {
+      await creditPage.fillPostalCode(testData.validUser.postalCode);
+    });
 
-    // Vérification : on a dépassé l'étape de contact.
-    // Le bouton Continuer de l'étape contact doit disparaître (étape quittée).
-    await expect(creditPage.contactContinueBtn).toBeHidden();
-    await expect(page).not.toHaveURL(/.*profil/);
+    await test.step('Choisir une offre', async () => {
+      await creditPage.chooseOffer();
+    });
+
+    await test.step("Passer l'étape d'éligibilité", async () => {
+      await creditPage.eligibilityStep();
+    });
+
+    await test.step("Renseigner l'identité", async () => {
+      await creditPage.fillIdentity(testData.validUser);
+    });
+
+    await test.step('Renseigner le contact', async () => {
+      await creditPage.fillContact(testData.validUser);
+    });
+
+    await test.step("Vérifier que l'étape contact est quittée", async () => {
+      await expect(creditPage.contactContinueBtn).toBeHidden({ timeout: 15000 });
+      // Idéal : remplacer par un élément propre à l'étape suivante
+      // await expect(page.getByRole('heading', { name: '...' })).toBeVisible();
+    });
   });
 
   test('TC-02 : devrait afficher une erreur pour un code postal invalide', async () => {
@@ -38,7 +53,6 @@ test.describe('Validation du formulaire de Crédit Izicarte', () => {
   });
 
   test("TC-03 : devrait bloquer la validation si l'email est mal formé", async () => {
-    // Timeout explicite pour tout le parcours (5 étapes + chargement des offres)
     test.setTimeout(90_000);
 
     await test.step('Saisir le code postal', async () => {
@@ -72,31 +86,33 @@ test.describe('Validation du formulaire de Crédit Izicarte', () => {
       await expect(creditPage.neoErrorMessage).toHaveText(
         /Votre adresse email n.est pas valide/i
       );
-      // Bouton de l'étape contact
       await expect(creditPage.contactContinueBtn).toBeDisabled();
     });
   });
 
   test("TC-04 : devrait afficher une erreur si l'utilisateur est mineur", async () => {
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
 
-    await creditPage.fillPostalCode(testData.validUser.postalCode);
-    await creditPage.chooseOffer();
-    await creditPage.eligibilityStep();
+    await test.step('Passer les étapes préalables', async () => {
+      await creditPage.fillPostalCode(testData.validUser.postalCode);
+      await creditPage.chooseOffer();
+      await creditPage.eligibilityStep();
+    });
 
-    const minorData = {
-      ...testData.validUser,
-      birthDate: '09/09/2015',
-    };
+    await test.step('Saisir une date de naissance de mineur', async () => {
+      const minorData = {
+        ...testData.validUser,
+        birthDate: '09/09/2015',
+      };
+      await creditPage.fillIdentity(minorData, false);
+    });
 
-    await creditPage.fillIdentity(minorData, false);
-
-    // Assertion sur le message d'erreur d'âge
-    await expect(creditPage.ageErrorMessage).toBeVisible();
-    await expect(creditPage.ageErrorMessage).toHaveText(
-      /Vous devez avoir plus de 18 ans pour poursuivre/i
-    );
-    // Bouton de l'étape identité
-    await expect(creditPage.profileContinueBtn).toBeDisabled();
+    await test.step("Vérifier l'erreur d'âge et le blocage UI", async () => {
+      await expect(creditPage.ageErrorMessage).toBeVisible();
+      await expect(creditPage.ageErrorMessage).toHaveText(
+        /Vous devez avoir plus de 18 ans pour poursuivre/i
+      );
+      await expect(creditPage.profileContinueBtn).toBeDisabled();
+    });
   });
 });

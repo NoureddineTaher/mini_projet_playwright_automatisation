@@ -85,21 +85,31 @@ export class CreditPage {
     await btn.click();
   }
 
+  // MODIFIÉ : on laisse 15 s à la bannière pour apparaître (runner CI plus lent).
+  // Si elle n'apparaît pas du tout, on continue sans erreur.
   async acceptCookies() {
-    await this.cookieBtn.click({ timeout: 5000 }).catch(() => {});
+    try {
+      await this.cookieBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await this.cookieBtn.click();
+    } catch {
+      // pas de bannière : on continue
+    }
   }
 
+  // MODIFIÉ : on attend que le formulaire du code postal soit réellement affiché
   async openAccount() {
     await this.openAccountLink.click();
     await this.openAccountBtn.first().click();
+    await this.postalInput.waitFor({ state: 'visible', timeout: 30000 });
   }
 
+  // MODIFIÉ : waitFor avant le fill + suppression de networkidle
   async fillPostalCode(code: string, shouldClickContinue = true) {
+    await this.postalInput.waitFor({ state: 'visible', timeout: 30000 });
     await this.postalInput.fill(code);
     await this.postalInput.blur();
     if (shouldClickContinue) {
       await this.clickContinue(this.continueBtn);
-      await this.page.waitForLoadState('networkidle').catch(() => {});
     }
   }
 
