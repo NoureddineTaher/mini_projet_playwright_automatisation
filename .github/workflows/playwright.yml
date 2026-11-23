@@ -41,7 +41,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       - name: Run API tests
         run: npx playwright test tests/api-credit.spec.ts
@@ -78,7 +78,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       - name: Run UI tests
         run: npx playwright test
@@ -97,7 +97,7 @@ jobs:
     needs: test_ui
     if: always()
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     environment:
       name: github-pages
@@ -117,7 +117,7 @@ jobs:
 
     if: success()
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Send Success Email
@@ -175,7 +175,7 @@ jobs:
 
     if: failure()
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Send Failure Email
