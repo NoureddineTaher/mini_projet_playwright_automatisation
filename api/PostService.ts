@@ -1,9 +1,18 @@
 import { APIRequestContext } from '@playwright/test';
 
-
 export class PostService {
-    // On utilise BASE_URL_API définie dans le fichier .env
-    private readonly baseUrl = process.env.BASE_URL_API;
+
+    private readonly baseUrl: string;
+
+    constructor() {
+        const url = process.env.BASE_URL_API;
+
+        if (!url) {
+            throw new Error('BASE_URL_API est absente du fichier .env ou de GitHub Actions.');
+        }
+
+        this.baseUrl = url.replace(/\/$/, '');
+    }
 
     async getPosts(request: APIRequestContext) {
         return await request.get(`${this.baseUrl}/posts`);
@@ -11,7 +20,7 @@ export class PostService {
 
     async createPost(request: APIRequestContext, data: any) {
         return await request.post(`${this.baseUrl}/posts`, {
-            data: data
+            data
         });
     }
 }

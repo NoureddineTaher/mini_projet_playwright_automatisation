@@ -1,3 +1,4 @@
+
 import { Page, expect, Locator } from '@playwright/test';
 
 interface IdentityData {
@@ -28,130 +29,252 @@ export class CreditPage {
   private readonly phoneInput: Locator;
   private readonly emailInput: Locator;
 
-  // Boutons "Continuer" : un par étape pour éviter le strict mode violation
-  public readonly continueBtn: Locator;          // étape code postal
-  public readonly profileContinueBtn: Locator;   // étape identité (app-profile)
-  public readonly contactContinueBtn: Locator;   // étape contact (app-contact)
+  // Boutons Continuer
+  public readonly continueBtn: Locator;
+  public readonly profileContinueBtn: Locator;
+  public readonly contactContinueBtn: Locator;
 
   // Messages d'erreur
-  public readonly errorMessage: Locator;         // code postal
-  public readonly neoErrorMessage: Locator;      // email (app-contact)
-  public readonly ageErrorMessage: Locator;      // âge (app-profile)
+  public readonly errorMessage: Locator;
+  public readonly neoErrorMessage: Locator;
+  public readonly ageErrorMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
-    this.cookieBtn = page.getByRole('button', { name: 'Continuer sans accepter' });
-    this.openAccountLink = page.getByRole('link', { name: 'Ouvrir un compte', exact: true });
-    this.openAccountBtn = page.getByRole('button', { name: 'Ouvrir un compte bancaire en' });
-    this.postalInput = page.getByRole('textbox', { name: 'code postal' });
+    this.cookieBtn = page.getByRole('button', {
+      name: 'Continuer sans accepter'
+    });
 
-    this.continueBtn = page.getByRole('button', { name: 'Continuer' });
+    this.openAccountLink = page.getByRole('link', {
+      name: 'Ouvrir un compte',
+      exact: true
+    });
+
+    this.openAccountBtn = page.getByRole('button', {
+      name: 'Ouvrir un compte bancaire en'
+    });
+
+    this.postalInput = page.getByRole('textbox', {
+      name: 'code postal'
+    });
+
+    this.continueBtn = page.getByRole('button', {
+      name: 'Continuer'
+    });
+
     this.profileContinueBtn = page
       .locator('app-profile')
       .getByRole('button', { name: 'Continuer' });
+
     this.contactContinueBtn = page
       .locator('app-contact')
       .getByRole('button', { name: 'Continuer' });
 
-    this.notClientBtn = page.getByRole('button', { name: 'Non, je ne suis pas encore' });
-    this.eligibleBtn = page.getByRole('button', { name: 'Oui je suis éligible' });
+    this.notClientBtn = page.getByRole('button', {
+      name: 'Non, je ne suis pas encore'
+    });
+
+    this.eligibleBtn = page.getByRole('button', {
+      name: 'Oui je suis éligible'
+    });
+
     this.civilityMr = page.getByText('Monsieur');
-    this.firstNameInput = page.getByRole('textbox', { name: 'Prénom' });
-    this.lastNameInput = page.getByRole('textbox', { name: 'Nom de naissance' });
-    this.birthDateInput = page.getByRole('textbox', { name: 'Date de naissance (JJ/MM/AAAA)' });
-    this.phoneInput = page.getByRole('textbox', { name: 'Numéro de mobile' });
-    this.emailInput = page.getByRole('textbox', { name: 'Adresse email' });
+
+    this.firstNameInput = page.getByRole('textbox', {
+      name: 'Prénom'
+    });
+
+    this.lastNameInput = page.getByRole('textbox', {
+      name: 'Nom de naissance'
+    });
+
+    this.birthDateInput = page.getByRole('textbox', {
+      name: 'Date de naissance (JJ/MM/AAAA)'
+    });
+
+    this.phoneInput = page.getByRole('textbox', {
+      name: 'Numéro de mobile'
+    });
+
+    this.emailInput = page.getByRole('textbox', {
+      name: 'Adresse email'
+    });
 
     this.errorMessage = page.locator('.bpce-input-error-msg');
+
     this.neoErrorMessage = page
       .locator('app-contact')
       .locator('.neo-text-helper-error .neo-text-helper-text');
+
     this.ageErrorMessage = page
       .locator('app-profile')
       .locator('.neo-text-helper-error .neo-text-helper-text');
   }
 
+  // ===== Navigation =====
+
   async navigate() {
     const url = process.env.BASE_URL_UI;
-    if (!url) throw new Error("ERREUR: BASE_URL_UI n'est pas définie");
-    await this.page.goto(url);
+
+    if (!url) {
+      throw new Error('BASE_URL_UI est absente de la configuration.');
+    }
+
+    await this.page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000
+    });
   }
+
+  // ===== Actions communes =====
 
   private async clickContinue(btn: Locator = this.continueBtn) {
+    await expect(btn).toBeVisible({ timeout: 20000 });
+    await expect(btn).toBeEnabled({ timeout: 20000 });
+
     await btn.scrollIntoViewIfNeeded();
-    await expect(btn).toBeVisible();
-    await expect(btn).toBeEnabled();
-    await btn.click();
+    await btn.click({ timeout: 20000 });
   }
 
-  // MODIFIÉ : on laisse 15 s à la bannière pour apparaître (runner CI plus lent).
-  // Si elle n'apparaît pas du tout, on continue sans erreur.
   async acceptCookies() {
+    // La bannière peut être absente ou déjà acceptée.
     try {
-      await this.cookieBtn.waitFor({ state: 'visible', timeout: 15000 });
-      await this.cookieBtn.click();
-    } catch {
-      // pas de bannière : on continue
+      await this.cookieBtn.waitFor({
+        state: 'visible',
+        timeout: 5000
+      });
+
+      await this.cookieBtn.click({ timeout: 10000 });
+    } catch (error) {
+      // On tolère uniquement l'absence de la bannière.
+      // Les autres erreurs ne doivent pas être masquées.
+      if (
+        !(error instanceof Error) ||
+        !/Timeout/i.test(error.message)
+      ) {
+        throw error;
+      }
     }
   }
 
-  // MODIFIÉ : on attend que le formulaire du code postal soit réellement affiché
   async openAccount() {
+    await expect(this.openAccountLink).toBeVisible({
+      timeout: 30000
+    });
+
     await this.openAccountLink.click();
+
+    await expect(this.openAccountBtn.first()).toBeVisible({
+      timeout: 30000
+    });
+
     await this.openAccountBtn.first().click();
-    await this.postalInput.waitFor({ state: 'visible', timeout: 30000 });
+
+    await expect(this.postalInput).toBeVisible({
+      timeout: 30000
+    });
   }
 
-  // MODIFIÉ : waitFor avant le fill + suppression de networkidle
-  async fillPostalCode(code: string, shouldClickContinue = true) {
-    await this.postalInput.waitFor({ state: 'visible', timeout: 30000 });
+  // ===== Étape code postal =====
+
+  async fillPostalCode(
+    code: string,
+    shouldClickContinue = true
+  ) {
+    await expect(this.postalInput).toBeVisible({
+      timeout: 30000
+    });
+
     await this.postalInput.fill(code);
     await this.postalInput.blur();
+
     if (shouldClickContinue) {
       await this.clickContinue(this.continueBtn);
     }
   }
 
-  async chooseOffer() {
-    // 1. Attendre que les cartes soient visibles
-    await this.page.locator('app-card').first().waitFor({ state: 'visible', timeout: 30000 });
+  // ===== Étape choix de l'offre =====
 
-    // 2. Filtrer la carte par un mot-clé unique ("solde")
-    //    et cibler le premier bouton trouvé à l'intérieur
-    const specificOffer = this.page
-      .locator('app-card')
+  async chooseOffer() {
+    const cards = this.page.locator('app-card');
+
+    await expect(cards.first()).toBeVisible({
+      timeout: 30000
+    });
+
+    const specificOffer = cards
       .filter({ hasText: /solde/i })
       .locator('button, [role="button"]')
       .first();
 
-    // 3. Scroll et vérification avant le clic
+    await expect(specificOffer).toBeVisible({
+      timeout: 20000
+    });
+
+    await expect(specificOffer).toBeEnabled();
+
     await specificOffer.scrollIntoViewIfNeeded();
-    await expect(specificOffer).toBeVisible({ timeout: 15000 });
     await specificOffer.click();
   }
 
+  // ===== Étape éligibilité =====
+
   async eligibilityStep() {
+    await expect(this.notClientBtn).toBeVisible({
+      timeout: 20000
+    });
+
     await this.notClientBtn.click();
+
+    await expect(this.eligibleBtn).toBeVisible({
+      timeout: 20000
+    });
+
     await expect(this.eligibleBtn).toBeEnabled();
+
     await this.eligibleBtn.click();
   }
 
-  async fillIdentity(data: IdentityData, shouldClickContinue = true) {
+  // ===== Étape identité =====
+
+  async fillIdentity(
+    data: IdentityData,
+    shouldClickContinue = true
+  ) {
+    await expect(this.firstNameInput).toBeVisible({
+      timeout: 20000
+    });
+
     await this.firstNameInput.fill(data.firstName);
+
     await this.civilityMr.click();
+
     await this.lastNameInput.fill(data.lastName);
+
     await this.birthDateInput.fill(data.birthDate);
     await this.birthDateInput.blur();
 
     if (shouldClickContinue) {
       await this.clickContinue(this.profileContinueBtn);
-      // On attend que l'étape contact soit réellement affichée avant de continuer
-      await expect(this.phoneInput).toBeVisible();
+
+      // Vérifier l'affichage de l'étape contact.
+      await expect(this.phoneInput).toBeVisible({
+        timeout: 20000
+      });
     }
   }
 
-  async fillContact(data: ContactData, shouldClickContinue = true) {
+  // ===== Étape contact =====
+
+  async fillContact(
+    data: ContactData,
+    shouldClickContinue = true
+  ) {
+    await expect(this.phoneInput).toBeVisible({
+      timeout: 20000
+    });
+
     await this.phoneInput.fill(data.phone);
     await this.emailInput.fill(data.email);
     await this.emailInput.blur();
