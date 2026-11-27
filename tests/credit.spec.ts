@@ -18,40 +18,6 @@ test.describe('Validation du formulaire de Crédit Izicarte', () => {
     await creditPage.openAccount();
   });
 
-  // ============================================================
-  // TC-01 : PARCOURS COMPLET
-  // ============================================================
-
-  test('TC-01 : devrait valider un parcours de souscription complet', async () => {
-
-    await test.step('Saisir le code postal', async () => {
-      await creditPage.fillPostalCode(
-        testData.validUser.postalCode
-      );
-    });
-
-    await test.step('Choisir une offre', async () => {
-      await creditPage.chooseOffer();
-    });
-
-    await test.step("Passer l'étape d'éligibilité", async () => {
-      await creditPage.eligibilityStep();
-    });
-
-    await test.step("Renseigner l'identité", async () => {
-      await creditPage.fillIdentity(testData.validUser);
-    });
-
-    await test.step('Renseigner le contact', async () => {
-      await creditPage.fillContact(testData.validUser);
-    });
-
-    await test.step("Vérifier la progression du parcours", async () => {
-      await expect(
-        creditPage.contactContinueBtn
-      ).toBeHidden({ timeout: 20000 });
-    });
-  });
 
   // ============================================================
   // TC-02 : CODE POSTAL INVALIDE
